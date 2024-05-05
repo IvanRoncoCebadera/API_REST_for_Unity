@@ -37,7 +37,7 @@ def verify_token(token):
 
 mongo_router = APIRouter()
 
-DO_I_HAVE_CONNECTION="/conexion/${token}"
+DO_I_HAVE_CONNECTION="/conexion/"
 GET_ALL_GAMES_ROUTE="/guardados/"
 GET_GAME_BY_ID_ROUTE="/guardados/${usuario}&{token}"
 POST_GAME_ROUTE="/guardados/"
@@ -65,7 +65,7 @@ async def get_all_routes():
     return routes
 
 @mongo_router.get(DO_I_HAVE_CONNECTION, response_model=bool, tags=["MongoDB"])
-async def check_if_i_have_connection(token: str):
+async def check_if_i_have_connection():
     return True
 
 @mongo_router.get(GET_ALL_GAMES_ROUTE, response_model=List[PartidaDTO], tags=["MongoDB"])
@@ -80,7 +80,17 @@ async def get_game_by_user(usuario: str, token: str = "NO", doRaise: bool = True
     print("TOKEN: "+token)
     partida = partidasRepo.find_by_user(usuario)
     if partida is not None:
-        if token == "NO" or partida.token == token:
+        if partida.token == token:
+            if verify_token(token):
+                if(doRaise):  partida.token = ""
+                partida.clave = ""
+                return partida
+            else:
+                print("Caducó el TOKEN!!")
+                if doRaise:
+                    raise HTTPException(status_code=401, detail="El token expiro")
+                else: return None
+        elif token == "NO":
             if(doRaise):  partida.token = ""
             partida.clave = ""
             return partida
@@ -117,6 +127,7 @@ async def add_game(partida: Partida):
         # Algo así sería para el token??
         return {"token": token}
     else:
+        print("Caducó el TOKEN!!")
         raise HTTPException(status_code=406, detail="No se guardo la partida")
 
 def encrypt_password(password):
@@ -136,15 +147,17 @@ def encrypt_password(password):
     
 @mongo_router.put(PUT_GAME_ROUTE, tags=["MongoDB"])
 async def update_game(partida: Partida, token: str):
-    old_game = await get_game_by_user(partida.usuario, token, False)
-    if old_game is None: salioBien = False
+    if verify_token(token):
+        if await get_game_by_user(partida.usuario, token, False) is None: salioBien = False
+        else:
+            partida.token = token
+            salioBien = partidasRepo.update(toPartidaDTO(partida)) #Esta partida, debería tener la password vacia. Si puedo actulizar, es porque ya inicie sesión antes.
+        if salioBien:
+            return {"message": "La partida se actualizo exitosamente"}
+        else:
+            raise HTTPException(status_code=406, detail="No se actualizo la partida")
     else:
-        partida.token = old_game.token
-        salioBien = partidasRepo.update(toPartidaDTO(partida)) #Esta partida, debería tener la password vacia. Si puedo actulizar, es porque ya inicie sesión antes.
-    if salioBien:
-        return {"message": "La partida se actualizo exitosamente"}
-    else:
-        raise HTTPException(status_code=406, detail="No se actualizo la partida")
+        raise HTTPException(status_code=401, detail="El token expiro")
     
 @mongo_router.put(UPDATE_CONNECTED_STATUS, tags=["MongoDB"])
 async def update_connected_status(usuario: str, estaConectado: str):
