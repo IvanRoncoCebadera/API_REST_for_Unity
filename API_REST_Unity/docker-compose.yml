@@ -1,0 +1,35 @@
+version: '3.1'
+services:
+  mongo:
+    restart: always
+    image: mongo:6.0.13-jammy
+    ports:
+      - '27017:27017'
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME
+      - MONGO_INITDB_ROOT_PASSWORD
+      - MONGO_INITDB_DATABASE
+      - MONGO_API_USER
+      - MONGO_API_PWD
+    volumes:
+      - mongo_database_practica:/data/db
+      - ./mongo/init-mongo.sh:/docker-entrypoint-initdb.d/init-mongo.sh
+  
+  api:
+    build: api_rest/.
+    depends_on:
+      - mongo
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+    develop:
+      watch:
+        - action: sync
+          path: api/src
+          target: /usr/src/app
+        - action: rebuild
+          path: api/requirements.txt
+
+volumes:
+  mongo_database_practica:
