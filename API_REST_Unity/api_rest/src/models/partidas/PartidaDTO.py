@@ -9,3 +9,4 @@ class PartidaDTO(BaseModel):
     saltosMaximos: int
     numeroBotonActual: int
     estaConectado: bool
+    token: str

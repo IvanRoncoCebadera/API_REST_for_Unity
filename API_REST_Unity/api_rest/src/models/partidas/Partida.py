@@ -10,3 +10,4 @@ class Partida(BaseModel):
     saltosMaximos: int
     numeroBotonActual: int
     estaConectado: bool
+    token: str

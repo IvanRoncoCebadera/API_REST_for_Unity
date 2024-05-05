@@ -10,5 +10,6 @@ def toPartidaDTO(partida: Partida) -> PartidaDTO:
         anguloVision = partida.anguloVision,
         saltosMaximos = partida.saltosMaximos,
         numeroBotonActual = partida.numeroBotonActual,
-        estaConectado= partida.estaConectado
+        estaConectado= partida.estaConectado,
+        token = partida.token
     )
