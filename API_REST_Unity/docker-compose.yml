@@ -20,7 +20,7 @@ services:
     depends_on:
       - mongo
     ports:
-      - "${API_PORT}:8000"
+      - "${API_PORT}:${API_PORT}"
     environment:
       - API_URL
       - API_PORT
