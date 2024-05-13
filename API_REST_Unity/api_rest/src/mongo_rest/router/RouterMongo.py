@@ -1,7 +1,5 @@
 from typing  import List
 from fastapi import APIRouter, HTTPException
-import random
-import string
 from IRepository.partidas import IPartidaRepo
 from mongo_rest.repository.partidas.PartidaRepoMongo import PartidaRepoMongo
 from models.partidas.Partida import Partida
@@ -14,9 +12,6 @@ from datetime import datetime, timedelta
 SECRET_KEY = 'DaVinci'
 
 partidasRepo: IPartidaRepo = PartidaRepoMongo()
-
-def generate_validation_code(length: int = 6) -> str: #Esta funcion genera un codigo de validación para simular cuando se creé un usuario
-    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
 
 def generate_token(user_id, expiration_days=30):
     expiration = datetime.utcnow() + timedelta(days=expiration_days)
@@ -73,11 +68,11 @@ async def get_game_files():
     partidas = partidasRepo.find_all()
     for partida in partidas:
         partida['clave'] = ''
+        partida['token'] = ''
     return partidas
 
 @mongo_router.get(GET_GAME_BY_ID_ROUTE, response_model=PartidaDTO, tags=["MongoDB"])
 async def get_game_by_user(usuario: str, token: str = "NO", doRaise: bool = True):
-    print("TOKEN: "+token)
     partida = partidasRepo.find_by_user(usuario)
     if partida is not None:
         if partida.token == token:
@@ -86,7 +81,6 @@ async def get_game_by_user(usuario: str, token: str = "NO", doRaise: bool = True
                 partida.clave = ""
                 return partida
             else:
-                print("Caducó el TOKEN!!")
                 if doRaise:
                     raise HTTPException(status_code=401, detail="El token expiro")
                 else: return None
@@ -105,7 +99,6 @@ async def get_game_by_user(usuario: str, token: str = "NO", doRaise: bool = True
     
 @mongo_router.post(POST_GAME_ROUTE, tags=["MongoDB"])
 async def add_game(partida: Partida):
-    print(partida.__dict__)
     if await get_game_by_user(partida.usuario, "NO", False) is None:
         password = encrypt_password(partida.clave) #Encripto la clave
         token = generate_token(partida.usuario) #Genero el token, sin incluir en este info sensible. Además, NO se pueden repetir nombres de usuarios!!!
@@ -127,7 +120,6 @@ async def add_game(partida: Partida):
         # Algo así sería para el token??
         return {"token": token}
     else:
-        print("Caducó el TOKEN!!")
         raise HTTPException(status_code=406, detail="No se guardo la partida")
 
 def encrypt_password(password):
@@ -161,7 +153,6 @@ async def update_game(partida: Partida, token: str):
     
 @mongo_router.put(UPDATE_CONNECTED_STATUS, tags=["MongoDB"])
 async def update_connected_status(usuario: str, estaConectado: str):
-    print("Estamos aquí!!")
     if await get_game_by_user(usuario, "NO", False) is None: salioBien = False
     else:
         salioBien = partidasRepo.update_connected_status(usuario, estaConectado.lower() == "true") 
@@ -193,11 +184,8 @@ def log_in(usuario: str, clave: str):
         encrypterPassword = encrypt_password(clave)
         if (partida.clave == encrypterPassword): 
             if(not partida.estaConectado):
-                print("Voy a generar el token!!")
                 #Generar un nuevo token para el usuario y mandarlo!!
                 token = generate_token(partida.usuario)
-
-                print("Tengo el token: "+token)
 
                 actualizado = partidasRepo.update_token_content(partida.usuario, token)
 

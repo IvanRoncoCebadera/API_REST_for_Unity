@@ -48,8 +48,7 @@ class PartidaRepoMongo(IPartidaRepo):
 
     def add(self, partida: PartidaDTO) -> bool:
         try: self.db.lista_partidas.insert_one(partida.__dict__)
-        except Exception as e: 
-            print(e)
+        except Exception as e:
             return False
         else: return True
     
@@ -61,12 +60,11 @@ class PartidaRepoMongo(IPartidaRepo):
         else: return True
 
     def update_connected_status(self, usuario: str, estaConectado: bool) -> bool:
-        try: self.db.lista_partidas.update_one({"usuario":usuario}, {"$set": {"estaConectado":estaConectado}}) #Si esto es false, le quito el TOKEN???
+        try: self.db.lista_partidas.update_one({"usuario":usuario}, {"$set": {"estaConectado":estaConectado}})
         except: return False
         else: return True
 
     def update_token_content(self, usuario: str, newToken: str) -> bool:
-        print("Voy a actulizar el token!!")
         try: self.db.lista_partidas.update_one({"usuario":usuario}, {"$set": {"token":newToken}})
         except: return False
         else: return True
