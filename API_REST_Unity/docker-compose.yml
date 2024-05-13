@@ -24,13 +24,6 @@ services:
     environment:
       - API_URL
       - API_PORT
-    develop:
-      watch:
-        - action: sync
-          path: api/src
-          target: /usr/src/app
-        - action: rebuild
-          path: api/requirements.txt
 
 volumes:
   mongo_database_practica:
