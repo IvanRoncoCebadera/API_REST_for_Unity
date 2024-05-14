@@ -1,6 +1,7 @@
 version: '3.1'
 services:
   mongo:
+    restart: always
     image: mongo:4.2.18
     ports:
       - '27017:27017'
