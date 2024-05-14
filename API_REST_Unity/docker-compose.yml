@@ -12,6 +12,7 @@ services:
       - MONGO_API_PWD
     volumes:
       - mongo_database:/data/db
+      - ./mongo/init-mongo.sh:/docker-entrypoint-initdb.d/init-mongo.sh
   
   api:
     build: api_rest/.
