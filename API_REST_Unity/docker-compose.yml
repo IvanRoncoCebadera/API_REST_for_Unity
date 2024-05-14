@@ -1,7 +1,6 @@
 version: '3.1'
 services:
   mongo:
-    restart: always
     image: mongo:4.2.18
     ports:
       - '27017:27017'
@@ -12,8 +11,7 @@ services:
       - MONGO_API_USER
       - MONGO_API_PWD
     volumes:
-      - mongo_database_practica:/data/db
-      - ./mongo/init-mongo.sh:/docker-entrypoint-initdb.d/init-mongo.sh
+      - mongo_database:/data/db
   
   api:
     build: api_rest/.
@@ -26,4 +24,4 @@ services:
       - API_PORT
 
 volumes:
-  mongo_database_practica:
+  mongo_database:
