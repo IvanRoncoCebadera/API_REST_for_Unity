@@ -6,7 +6,7 @@ from IRepository import mongo_db
 validator = {
     "$jsonSchema": {
         "bsonType": "object",
-        "required": ["usuario", "clave", "posicion", "numeroEscena", "anguloVision", "saltosMaximos", "numeroBotonActual", "estaConectado"],
+        "required": ["usuario", "clave", "posicion", "numeroEscena", "anguloVision", "saltosMaximos", "numeroBotonActual", "estaConectado", "token"],
         "properties": {
             "usuario": { "bsonType": "string", "description": "Nombre del usuario al que pertenece el guardado" },
             "clave": { "bsonType": "string", "description": "Contraseña encryptada para el inicio de sesión" },
@@ -23,7 +23,8 @@ validator = {
             "anguloVision": { "bsonType": "number", "description": "Ángulo de visión del jugador" },
             "saltosMaximos": { "bsonType": "int", "description": "Número máximo de saltos permitidos para el jugador" },
             "numeroBotonActual": { "bsonType": "int", "description": "Número del botón actual presionado por el jugador" },
-            "estaConectado": { "bsonType": "boolean", "description": "Booleano que permite saber si hay alguién usando la cuenta" }
+            "estaConectado": { "bsonType": "boolean", "description": "Booleano que permite saber si hay alguién usando la cuenta" },
+            "token": { "bsonType": "string", "description": "Token único de validación para el usuario" }
         }
     }
 }
@@ -47,8 +48,7 @@ class PartidaRepoMongo(IPartidaRepo):
 
     def add(self, partida: PartidaDTO) -> bool:
         try: self.db.lista_partidas.insert_one(partida.__dict__)
-        except Exception as e: 
-            print(e)
+        except Exception as e:
             return False
         else: return True
     
@@ -61,6 +61,11 @@ class PartidaRepoMongo(IPartidaRepo):
 
     def update_connected_status(self, usuario: str, estaConectado: bool) -> bool:
         try: self.db.lista_partidas.update_one({"usuario":usuario}, {"$set": {"estaConectado":estaConectado}})
+        except: return False
+        else: return True
+
+    def update_token_content(self, usuario: str, newToken: str) -> bool:
+        try: self.db.lista_partidas.update_one({"usuario":usuario}, {"$set": {"token":newToken}})
         except: return False
         else: return True
 

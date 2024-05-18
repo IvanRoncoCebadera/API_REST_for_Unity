@@ -1,27 +1,43 @@
 from typing  import List
 from fastapi import APIRouter, HTTPException
-import random
-import string
 from IRepository.partidas import IPartidaRepo
 from mongo_rest.repository.partidas.PartidaRepoMongo import PartidaRepoMongo
 from models.partidas.Partida import Partida
 from models.partidas.PartidaDTO import PartidaDTO
 from models.partidas.PartidasMapper import toPartidaDTO
 import hashlib
+import jwt
+from datetime import datetime, timedelta
+
+SECRET_KEY = 'DaVinci'
 
 partidasRepo: IPartidaRepo = PartidaRepoMongo()
 
-def generate_validation_code(length: int = 6) -> str: #Esta funcion genera un codigo de validación para simular cuando se creé un usuario
-    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
+def generate_token(user_id, expiration_days=30):
+    expiration = datetime.utcnow() + timedelta(days=expiration_days)
+    payload = {'user_id': user_id, 'exp': expiration}
+    token = jwt.encode(payload, SECRET_KEY, algorithm='HS256')
+    return token
+
+def verify_token(token):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
+        return payload
+    except jwt.ExpiredSignatureError:
+        # El token ha expirado
+        return None
+    except jwt.InvalidTokenError:
+        # El token no es válido
+        return None
 
 mongo_router = APIRouter()
 
-DO_I_HAVE_CONNECTION="/conexion"
+DO_I_HAVE_CONNECTION="/conexion/"
 GET_ALL_GAMES_ROUTE="/guardados/"
-GET_GAME_BY_ID_ROUTE="/guardados/${usuario}"
+GET_GAME_BY_ID_ROUTE="/guardados/${usuario}&{token}"
 POST_GAME_ROUTE="/guardados/"
-PUT_GAME_ROUTE="/guardados/"
-UPDATE_CONNECTED_STATUS="/guardados/${usuario}&{estaConectado}"
+PUT_GAME_ROUTE="/guardados/${token}"
+UPDATE_CONNECTED_STATUS="/guardados/estadoConexion/${usuario}&{estaConectado}"
 DELETE_GAME_BY_ID_ROUTE="/guardados/${usuario}"
 DELETE_ALL_GAMES_ROUTE="/guardados/"
 LOG_IN="/guardados/login/${usuario}&{clave}"
@@ -52,14 +68,30 @@ async def get_game_files():
     partidas = partidasRepo.find_all()
     for partida in partidas:
         partida['clave'] = ''
+        partida['token'] = ''
     return partidas
 
 @mongo_router.get(GET_GAME_BY_ID_ROUTE, response_model=PartidaDTO, tags=["MongoDB"])
-async def get_game_by_user(usuario: str, doRaise: bool = True):
+async def get_game_by_user(usuario: str, token: str = "NO", doRaise: bool = True):
     partida = partidasRepo.find_by_user(usuario)
     if partida is not None:
-        partida.clave = ""
-        return partida
+        if partida.token == token:
+            if verify_token(token):
+                if(doRaise):  partida.token = ""
+                partida.clave = ""
+                return partida
+            else:
+                if doRaise:
+                    raise HTTPException(status_code=401, detail="El token expiro")
+                else: return None
+        elif token == "NO":
+            if(doRaise):  partida.token = ""
+            partida.clave = ""
+            return partida
+        else:
+            if doRaise:
+                raise HTTPException(status_code=404, detail="Token no válido")
+            else: return None
     else:
         if doRaise:
             raise HTTPException(status_code=404, detail="Partida no encontrada")
@@ -67,25 +99,26 @@ async def get_game_by_user(usuario: str, doRaise: bool = True):
     
 @mongo_router.post(POST_GAME_ROUTE, tags=["MongoDB"])
 async def add_game(partida: Partida):
-    print(partida.__dict__)
-    if await get_game_by_user(partida.usuario, False) is None:
+    if await get_game_by_user(partida.usuario, "NO", False) is None:
+        password = encrypt_password(partida.clave) #Encripto la clave
+        token = generate_token(partida.usuario) #Genero el token, sin incluir en este info sensible. Además, NO se pueden repetir nombres de usuarios!!!
         partida_encriptada: Partida = Partida(
             usuario=partida.usuario,
-            clave=encrypt_password(partida.clave),
+            clave=password,
             posicion=partida.posicion,
             numeroEscena=partida.numeroEscena,
             anguloVision=partida.anguloVision,
             saltosMaximos=partida.saltosMaximos,
             numeroBotonActual=partida.numeroBotonActual,
-            estaConectado= True #En local primero mando la petición de crear. En caso de que salga bien, entonces actualizo el local!!
+            estaConectado=True, #En local primero mando la petición de crear. En caso de que salga bien, entonces actualizo el local!!
+            token=token
         ) #Encrypto la contraseña, solo al añadir, en el caso de actualizar, no habría que cambiar ni contraseña, ni usuario!!
         salioBien = partidasRepo.add(toPartidaDTO(partida_encriptada))
     else:
         salioBien = False
     if salioBien:
         # Algo así sería para el token??
-        validation_code = generate_validation_code() #Cojo el codigo de validación y lo muestro.
-        return {"message": "La información se guardo exitosamente. Se ha enviado un código de validación al usuario.", "validation_code": validation_code}
+        return {"token": token}
     else:
         raise HTTPException(status_code=406, detail="No se guardo la partida")
 
@@ -105,18 +138,22 @@ def encrypt_password(password):
     return encrypted_password
     
 @mongo_router.put(PUT_GAME_ROUTE, tags=["MongoDB"])
-async def update_game(partida: Partida):
-    if await get_game_by_user(partida.usuario, False) is None: salioBien = False
+async def update_game(partida: Partida, token: str):
+    if verify_token(token):
+        if await get_game_by_user(partida.usuario, token, False) is None: salioBien = False
+        else:
+            partida.token = token
+            salioBien = partidasRepo.update(toPartidaDTO(partida)) #Esta partida, debería tener la password vacia. Si puedo actulizar, es porque ya inicie sesión antes.
+        if salioBien:
+            return {"message": "La partida se actualizo exitosamente"}
+        else:
+            raise HTTPException(status_code=406, detail="No se actualizo la partida")
     else:
-        salioBien = partidasRepo.update(toPartidaDTO(partida)) #Esta partida, debería tener la password vacia. Si puedo actulizar, es porque ya inicie sesión antes.
-    if salioBien:
-        return {"message": "La partida se actualizo exitosamente"}
-    else:
-        raise HTTPException(status_code=406, detail="No se actualizo la partida")
+        raise HTTPException(status_code=401, detail="El token expiro")
     
 @mongo_router.put(UPDATE_CONNECTED_STATUS, tags=["MongoDB"])
 async def update_connected_status(usuario: str, estaConectado: str):
-    if await get_game_by_user(usuario, False) is None: salioBien = False
+    if await get_game_by_user(usuario, "NO", False) is None: salioBien = False
     else:
         salioBien = partidasRepo.update_connected_status(usuario, estaConectado.lower() == "true") 
     if salioBien:
@@ -139,15 +176,23 @@ async def delete_all_games():
         return {"message": "Se han borrado todas las partidas"}
     else:
         raise HTTPException(status_code=404, detail="No se han podido borrar las partidas")
-    
-@mongo_router.get(LOG_IN, response_model=int, tags=["MongoDB"])
+
+@mongo_router.get(LOG_IN, response_model=str, tags=["MongoDB"])
 def log_in(usuario: str, clave: str):
     partida: Partida = partidasRepo.find_by_user(usuario)
     if partida is not None:
         encrypterPassword = encrypt_password(clave)
         if (partida.clave == encrypterPassword): 
             if(not partida.estaConectado):
-                return 0  #Nos loggamos
-            else: return 1 #Hay alguien conectado
-        else: return 2 #Contraseña invalida
-    else: return 3 #Usuario no encontrado
+                #Generar un nuevo token para el usuario y mandarlo!!
+                token = generate_token(partida.usuario)
+
+                actualizado = partidasRepo.update_token_content(partida.usuario, token)
+
+                if actualizado:
+                    return token  #Nos loggamos, por lo que le envio el nuevo token
+                else:
+                    return '4' #Fallo de conexión
+            else: return '1' #Hay alguien conectado
+        else: return '2' #Contraseña invalida
+    else: return '3' #Usuario no encontrado

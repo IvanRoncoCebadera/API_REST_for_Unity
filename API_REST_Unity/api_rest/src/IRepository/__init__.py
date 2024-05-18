@@ -2,7 +2,6 @@ from pymongo import MongoClient
 from dotenv import dotenv_values
 
 ENV = dotenv_values()
-print(ENV)
 
 # MongoDB
 user = ENV["MONGO_USER"]

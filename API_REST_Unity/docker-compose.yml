@@ -2,7 +2,7 @@ version: '3.1'
 services:
   mongo:
     restart: always
-    image: mongo:6.0.13-jammy
+    image: mongo:4.2.18
     ports:
       - '27017:27017'
     environment:
@@ -12,7 +12,7 @@ services:
       - MONGO_API_USER
       - MONGO_API_PWD
     volumes:
-      - mongo_database_practica:/data/db
+      - mongo_database:/data/db
       - ./mongo/init-mongo.sh:/docker-entrypoint-initdb.d/init-mongo.sh
   
   api:
@@ -20,16 +20,10 @@ services:
     depends_on:
       - mongo
     ports:
-      - "8000:8000"
+      - "${API_PORT}:${API_PORT}"
     environment:
-      - PORT=8000
-    develop:
-      watch:
-        - action: sync
-          path: api/src
-          target: /usr/src/app
-        - action: rebuild
-          path: api/requirements.txt
+      - API_URL
+      - API_PORT
 
 volumes:
-  mongo_database_practica:
+  mongo_database:
