@@ -16,6 +16,7 @@ services:
       - ./mongo/init-mongo.sh:/docker-entrypoint-initdb.d/init-mongo.sh
   
   api:
+    restart: always
     build: api_rest/.
     depends_on:
       - mongo
