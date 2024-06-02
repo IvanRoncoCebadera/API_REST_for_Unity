@@ -1,0 +1,6 @@
+{
+    "python.analysis.extraPaths": [
+        "./API_REST_Unity/api_rest/src",
+        "./API_REST_Unity/api_rest/src/mongo_rest/repository/partidas"
+    ]
+}

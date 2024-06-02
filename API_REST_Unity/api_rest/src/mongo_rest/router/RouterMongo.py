@@ -100,8 +100,8 @@ async def get_game_by_user(usuario: str, token: str = "NO", doRaise: bool = True
 @mongo_router.post(POST_GAME_ROUTE, tags=["MongoDB"])
 async def add_game(partida: Partida):
     if await get_game_by_user(partida.usuario, "NO", False) is None:
-        password = encrypt_password(partida.clave) #Encripto la clave
-        token = generate_token(partida.usuario) #Genero el token, sin incluir en este info sensible. Además, NO se pueden repetir nombres de usuarios!!!
+        password = encrypt_password(partida.clave)
+        token = generate_token(partida.usuario)
         partida_encriptada: Partida = Partida(
             usuario=partida.usuario,
             clave=password,
@@ -110,17 +110,17 @@ async def add_game(partida: Partida):
             anguloVision=partida.anguloVision,
             saltosMaximos=partida.saltosMaximos,
             numeroBotonActual=partida.numeroBotonActual,
-            estaConectado=True, #En local primero mando la petición de crear. En caso de que salga bien, entonces actualizo el local!!
+            estaConectado=True,
             token=token
-        ) #Encrypto la contraseña, solo al añadir, en el caso de actualizar, no habría que cambiar ni contraseña, ni usuario!!
+        )
         salioBien = partidasRepo.add(toPartidaDTO(partida_encriptada))
     else:
         salioBien = False
     if salioBien:
-        # Algo así sería para el token??
         return {"token": token}
     else:
-        raise HTTPException(status_code=406, detail="No se guardo la partida")
+        raise HTTPException(status_code=406, detail="No se guardo la partida") #Partida con un nombre ya existente o fallo de conexión con la BBDD
+
 
 def encrypt_password(password):
     # Convertir la contraseña en bytes antes de pasarla al algoritmo de hash
@@ -142,12 +142,12 @@ async def update_game(partida: Partida, token: str):
     if verify_token(token):
         if await get_game_by_user(partida.usuario, token, False) is None: salioBien = False
         else:
-            partida.token = token
+            if(partida.token == ""): partida.token = token #Añadido que se puede actualizar el token, esto solo se usa para los tests!!!
             salioBien = partidasRepo.update(toPartidaDTO(partida)) #Esta partida, debería tener la password vacia. Si puedo actulizar, es porque ya inicie sesión antes.
         if salioBien:
             return {"message": "La partida se actualizo exitosamente"}
         else:
-            raise HTTPException(status_code=406, detail="No se actualizo la partida")
+            raise HTTPException(status_code=406, detail="No se actualizo la partida") #No se ha encontrado al usuario o fallo de conexión con la BBDD
     else:
         raise HTTPException(status_code=401, detail="El token expiro")
     
@@ -159,7 +159,7 @@ async def update_connected_status(usuario: str, estaConectado: str):
     if salioBien:
         return {"message": "Se actualizo el estado de la conexión a: "+estaConectado}
     else:
-        raise HTTPException(status_code=406, detail="No se actualizo el estado de la conexión")
+        raise HTTPException(status_code=406, detail="No se actualizo el estado de la conexión") #Usuario no encontrado o fallo de conexión con la BBDD
 
 @mongo_router.delete(DELETE_GAME_BY_ID_ROUTE, tags=["MongoDB"])
 async def delete_game_by_user(usuario: str):
@@ -167,7 +167,7 @@ async def delete_game_by_user(usuario: str):
     if salioBien:
         return {"message": "Partida del usuario ("+usuario+") borrada exitosamente"}
     else:
-        raise HTTPException(status_code=404, detail="Usuario: "+usuario+", no encontrado")
+        raise HTTPException(status_code=404, detail="No se ha podido borrar la partida del usuario: "+usuario) #Fallo de conexión con la BBDD
     
 @mongo_router.delete(DELETE_ALL_GAMES_ROUTE, tags=["MongoDB"])
 async def delete_all_games():
@@ -175,7 +175,7 @@ async def delete_all_games():
     if salioBien:
         return {"message": "Se han borrado todas las partidas"}
     else:
-        raise HTTPException(status_code=404, detail="No se han podido borrar las partidas")
+        raise HTTPException(status_code=404, detail="No se han podido borrar las partidas") #Fallo de conexión con la BBDD
 
 @mongo_router.get(LOG_IN, response_model=str, tags=["MongoDB"])
 def log_in(usuario: str, clave: str):

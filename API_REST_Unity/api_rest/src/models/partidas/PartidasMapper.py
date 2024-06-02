@@ -5,7 +5,7 @@ def toPartidaDTO(partida: Partida) -> PartidaDTO:
     return PartidaDTO(
         usuario = partida.usuario,
         clave = partida.clave,
-        posicion = partida.posicion.dict(),
+        posicion = partida.posicion.model_dump(),
         numeroEscena = partida.numeroEscena,
         anguloVision = partida.anguloVision,
         saltosMaximos = partida.saltosMaximos,

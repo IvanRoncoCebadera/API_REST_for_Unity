@@ -1,7 +1,7 @@
 from typing import List, Optional
 from IRepository.partidas.IPartidaRepo import IPartidaRepo
 from models.partidas.PartidaDTO import PartidaDTO
-from IRepository import mongo_db
+from IRepository.MongoDBConfig import MongoDBConfig
 
 validator = {
     "$jsonSchema": {
@@ -32,7 +32,7 @@ validator = {
 class PartidaRepoMongo(IPartidaRepo):
 
     def __init__(self):
-        self.db = mongo_db.testdb
+        self.db = MongoDBConfig.get_mongo_db().testdb
 
         try: 
             self.db.create_collection("lista_partidas", validator = validator)
@@ -47,15 +47,14 @@ class PartidaRepoMongo(IPartidaRepo):
         except: return None
 
     def add(self, partida: PartidaDTO) -> bool:
-        try: self.db.lista_partidas.insert_one(partida.__dict__)
-        except Exception as e:
-            return False
+        try: self.db.lista_partidas.insert_one(partida.model_dump())
+        except Exception: return False
         else: return True
     
     def update(self, partida: PartidaDTO) -> bool:
-        partida_dict = partida.__dict__
+        partida_dict = partida.model_dump()
         del partida_dict['clave']
-        try: self.db.lista_partidas.update_one({"usuario":partida.usuario}, {"$set":partida_dict})
+        try: self.db.lista_partidas.update_one({"usuario":partida.usuario}, {"$set":partida.model_dump()})
         except: return False
         else: return True
 
