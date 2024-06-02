@@ -68,6 +68,10 @@ El objetivo de la API es sencillo. Permitir la conexión del usuario con un serv
 - **JWT**: Utilizado para autenticar y autorizar solicitudes.
 - **MD5**: Utilizado para hashear contraseñas antes de almacenarlas en la base de datos.
 
+## Tests
+
+La API cuenta con un fichero de tests que se puede ejecutar tal y como se comenta en el propio fichero. EL fichero de tests comprueba las conexiones através de los Endpoints principales de la aplicación, verificando que todas las funcionalidades esten correctas y comprobando que se establece conexión con la base de datos.
+
 ## Base de Datos
 
 El proyecto utiliza MongoDB para almacenar datos. Asegúrate de tener una instancia de MongoDB en funcionamiento y configura la URI de conexión en el archivo `.env`. En el Docker Compose del proyecto, ya viene la configuración para crear una instancia de una MongoDB.
