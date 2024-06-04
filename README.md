@@ -39,17 +39,13 @@ El objetivo de la API es sencillo. Permitir la conexión del usuario con un serv
 ## Uso
 
 1. Configura las variables de entorno necesarias en los archivos `.env` dentro del proyecto:
-    ```plaintext
-    MONGO_URI=mongodb://localhost:27017
-    SECRET_KEY=tu_secreto_para_jwt
-    ```
 
 2. Inicia la aplicación utilizando Docker Compose:
     ```bash
     docker-compose up --build
     ```
 
-3. La API estará disponible en `http://0.0.0.0:8000` (por defecto).
+3. La API estará disponible en `http://localhost:8000` (por defecto).
 
 ## Endpoints Principales
 
@@ -67,6 +63,10 @@ El objetivo de la API es sencillo. Permitir la conexión del usuario con un serv
 
 - **JWT**: Utilizado para autenticar y autorizar solicitudes.
 - **MD5**: Utilizado para hashear contraseñas antes de almacenarlas en la base de datos.
+
+## Tests
+
+La API cuenta con un fichero de tests que se puede ejecutar tal y como se comenta en el propio fichero. EL fichero de tests comprueba las conexiones através de los Endpoints principales de la aplicación, verificando que todas las funcionalidades esten correctas y comprobando que se establece conexión con la base de datos.
 
 ## Base de Datos
 

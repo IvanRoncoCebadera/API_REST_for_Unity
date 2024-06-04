@@ -1,0 +1,3 @@
+NOTA: Si sientes que este fichero no se esta ejecutando, probablemente sea a que se ha desconfigurado y los finales de línea no son válidos para un sistema UNIX.
+Por favor, si este es el caso, chekea este enlace: https://www.linuxtotal.com.mx/index.php?cont=info__tips_015
+Siguiendo el enlace, podrás encontrar diferentes maneras de arreglar el posible fallo.
