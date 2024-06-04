@@ -45,7 +45,7 @@ El objetivo de la API es sencillo. Permitir la conexión del usuario con un serv
     docker-compose up --build
     ```
 
-3. La API estará disponible en `http://0.0.0.0:8000` (por defecto).
+3. La API estará disponible en `http://localhost:8000` (por defecto).
 
 ## Endpoints Principales
 
