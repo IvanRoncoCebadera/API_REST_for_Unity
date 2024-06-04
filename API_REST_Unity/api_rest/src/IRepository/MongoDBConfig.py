@@ -8,14 +8,12 @@ class MongoDBConfig:
     @classmethod
     def test_connection(cls, uri):
         try:
-            client = MongoClient(uri, serverSelectionTimeoutMS=1000)
+            client = MongoClient(uri, serverSelectionTimeoutMS=5000)
             client.admin.command('ismaster')
             return True
         except Exception as e:
-            print(e)
             client.close()
             if 'Authentication failed' in str(e):
-                print(e)
                 return True
             else:
                 return False
@@ -24,8 +22,6 @@ class MongoDBConfig:
     def get_mongo_db(cls):
         env_path = os.path.join(os.path.dirname(__file__), '..', '.env')
         ENV = dotenv_values(env_path)
-        print("Valores ENV: ")
-        print(ENV)
         user = ENV["MONGO_USER"]
         password = ENV["MONGO_PWD"]
         host = ENV["MONGO_HOST"]
@@ -42,8 +38,6 @@ class MongoDBConfig:
     def get_mongo_db_for_tests(cls):
         env_path = os.path.join(os.path.dirname(__file__), '..', '.env_test')
         ENV = dotenv_values(env_path)
-        print("Valores ENV de los tests: ")
-        print(ENV)
         user = ENV["MONGO_USER"]
         password = ENV["MONGO_PWD"]
         host = ENV["MONGO_HOST"]
