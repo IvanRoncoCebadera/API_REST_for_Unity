@@ -39,10 +39,6 @@ El objetivo de la API es sencillo. Permitir la conexión del usuario con un serv
 ## Uso
 
 1. Configura las variables de entorno necesarias en los archivos `.env` dentro del proyecto:
-    ```plaintext
-    MONGO_URI=mongodb://localhost:27017
-    SECRET_KEY=tu_secreto_para_jwt
-    ```
 
 2. Inicia la aplicación utilizando Docker Compose:
     ```bash
