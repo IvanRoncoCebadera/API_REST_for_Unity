@@ -19,27 +19,6 @@ MONGO_ROUTE = "/mongo/partidas"
 
 SECRET_KEY = 'DaVinci'
 
-def generate_token(user_id, expiration_seconds=0):
-    expiration = datetime.utcnow() + timedelta(seconds=expiration_seconds)
-    payload = {'user_id': user_id, 'exp': expiration}
-    token = jwt.encode(payload, SECRET_KEY, algorithm='HS256')
-    return token
-
-def encrypt_password(password):
-    # Convertir la contraseña en bytes antes de pasarla al algoritmo de hash
-    password_bytes = password.encode('utf-8')
-
-    # Crear un objeto hash MD5
-    md5_hash = hashlib.md5()
-
-    # Actualizar el objeto hash con la contraseña en bytes
-    md5_hash.update(password_bytes)
-
-    # Obtener el hash MD5 como una cadena hexadecimal
-    encrypted_password = md5_hash.hexdigest()
-
-    return encrypted_password
-
 # Datos de prueba
 usuario_test = "testuser"
 usuario_no_existente = "USUARIO_FALSO"
@@ -61,15 +40,30 @@ partida_test = {
     "token": ""
   }
 
+def generate_token(user_id, expiration_seconds=0):
+    expiration = datetime.utcnow() + timedelta(seconds=expiration_seconds)
+    payload = {'user_id': user_id, 'exp': expiration}
+    token = jwt.encode(payload, SECRET_KEY, algorithm='HS256')
+    return token
+
+def encrypt_password(password):
+    # Convertir la contraseña en bytes antes de pasarla al algoritmo de hash
+    password_bytes = password.encode('utf-8')
+
+    # Crear un objeto hash MD5
+    md5_hash = hashlib.md5()
+
+    # Actualizar el objeto hash con la contraseña en bytes
+    md5_hash.update(password_bytes)
+
+    # Obtener el hash MD5 como una cadena hexadecimal
+    encrypted_password = md5_hash.hexdigest()
+
+    return encrypted_password
+
 # Limpiar datos de prueba
 def cleanup_test_data():
     partidas_repo.delete_by_user(usuario_test)
-
-# Fixtures para limpiar después de cada prueba
-@pytest.fixture(scope="module", autouse=True)
-def setup_and_teardown():
-    yield
-    cleanup_test_data()
 
 ############################################ ROUTES ##############################################
 
